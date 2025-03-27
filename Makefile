@@ -65,6 +65,6 @@ view:
 
 clean:
 	@echo "Clearing build files..."
-	@rm -rf *.elf *.bin ./build/*.o
+	@rm -rf *.elf *.bin ./build/*.o ./*.out
 
 .PHONY: all clean flash view inspect
