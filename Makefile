@@ -13,7 +13,7 @@ $(OUTPUT_BIN): $(OUTPUT_ELF)
 	@echo Building $(OUTPUT_BIN)
 	@arm-none-eabi-objcopy -O binary $^ $@
 
-$(OUTPUT_ELF): build/main.o build/startup.o build/nucleoG491RE.o build/flash.o build/clock.o build/lpuart.o build/print.o build/delay.o build/power.o
+$(OUTPUT_ELF): build/main.o build/startup.o build/nucleoG491RE.o build/flash.o build/clock.o build/lpuart.o build/print.o build/delay.o build/power.o build/deviceid.o
 	@echo Builing $(OUTPUT_ELF)
 	@$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
@@ -54,6 +54,10 @@ build/delay.o: src/delay.c h/delay.h
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 build/power.o: src/power.c h/power.h
+	@echo Builing object $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+build/deviceid.o: src/deviceid.c h/deviceid.h
 	@echo Builing object $@
 	@$(CC) $(CFLAGS) -c $< -o $@
 
