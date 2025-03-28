@@ -23,10 +23,10 @@
 /* internal helper functions */
 LOCAL void 	enable_flash_interface();
 LOCAL void	disable_flash_interface();
-LOCAL void 	update_flash_read_latency_r1(const uint32_t ahb_speed);
-LOCAL void 	set_flash_read_latency(uint32_t wait_states);
+LOCAL void 	update_flash_read_latency_r1(const uint32_t target_ahb_speed);
+LOCAL void 	set_flash_read_latency(const uint32_t wait_states);
 
 /* public interface */
-void 		update_flash_read_latency(const uint32_t ahb_speed);
+void 		update_flash_read_latency(const uint32_t target_ahb_speed);
  
 #endif

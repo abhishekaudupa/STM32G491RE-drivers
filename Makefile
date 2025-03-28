@@ -6,8 +6,9 @@ LDFLAGS = -T $(LINKER_FILE) -nostartfiles
 OUTPUT_ELF = myprog.elf
 OUTPUT_BIN = myprog.bin
 FLASH_BASE = 0x8000000
+CLK_CALC = clk.out
 
-all: $(OUTPUT_BIN)
+all: $(OUTPUT_BIN) $(CLK_CALC)
 
 $(OUTPUT_BIN): $(OUTPUT_ELF)
 	@echo Building $(OUTPUT_BIN)
@@ -60,6 +61,9 @@ build/power.o: src/power.c h/power.h
 build/deviceid.o: src/deviceid.c h/deviceid.h
 	@echo Builing object $@
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(CLK_CALC): ./sysclk.c
+	@gcc $< -o $@
 
 inspect:
 	@arm-none-eabi-objdump -h $(OUTPUT_ELF)

@@ -1,9 +1,12 @@
 #include "stm32g491xx.h"
+#include "nucleoG491RE.h"
 #include "flash.h"
 #include "clock.h"
+#include "delay.h"
 #include "power.h"
 
 uint32_t sysclk, hclk, pclk1, pclk2;
+SysClk_Source sysclk_source;
 
 void update_clocks() {
     /* do not change the order of these calls */
@@ -33,58 +36,71 @@ uint32_t get_pclk2_speed() {
 void set_sysclk_hse() {
     hse_on();
 
-    /* set flash latency to 0 wait states */
     update_flash_read_latency(__MHz(24));
 
-    set_sysclk(SYSCLK_HSE);
+    set_sysclk(SysClk_HSE);
 
     update_clocks();
 }
 
-void set_sysclk_pll_100MHz() {
+void set_sysclk_pll(PLLClk_Source pll_src, 
+	const uint32_t m, 
+	const uint32_t n, 
+	const uint32_t r, 
+	const uint32_t target_ahb_speed) {
 
-    hse_on();
-    disable_pll();
+    /*
+     * target_ahb_speed isn't really necessary. 
+     * But since I'm passing it in as a predefined 
+     * macro, having it avoids a few arithmetic 
+     * operations. target_ahb_speed could be 
+     * calculated as: 
+     *   (pll_src clock speed / m) * n / r.
+     */
 
-    /* clear PLL M,N,R and clock source bits */
-    RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLM | ~RCC_PLLCFGR_PLLN | ~RCC_PLLCFGR_PLLR | ~RCC_PLLCFGR_PLLSRC | ~RCC_PLLCFGR_PLLREN;
+    if(get_sysclk_source() == SysClk_PLL) {
+	/* 
+	 * we cannot configure the PLL while it is being 
+	 * used as the system clock source. So we're gonna
+	 * temporarily switch to HSE.
+	 */
+	enable_user_led();
+	enable_systick();
+	user_led_blink(70);
+	return;
+    }
 
-    /* M = 2, N = 50, R = 6 */
-    set_pllm(2);
-    set_plln(50);
-    set_pllr(6);
-
-    /* PLL clock source is HSE 24MHz */
-    RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSE;
-
-    enable_pll();
+    configure_pll(pll_src, m, n, r);
 
     /* enable PLL R output */
     RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;
 
-    /* set flash latency to 3 wait states */
-    update_flash_read_latency(__MHz(100));
-
-    /* set AHB prescaler to divide by 2 */
-    set_ahb_presc(2);
-
-    set_sysclk(SYSCLK_PLL);
-
-    /* wait for atleast 1us */
-    for(volatile int i = 0; i < 100; ++i);
-
-    /* set AHB prescaler to no division */
-    set_ahb_presc(1);
+    /*
+     * If system clock speed increases after this, we must first 
+     * set the appropriate flash read latency and then switch the 
+     * clock. If system clock speed decreases we must switch the 
+     * clock and then set the appropriate flash read latency. 
+     */
+    if(target_ahb_speed >= get_sysclk_speed()) {
+	update_flash_read_latency(target_ahb_speed);
+	transition(SysClk_PLL);
+    } else {
+	transition(SysClk_PLL);
+	update_flash_read_latency(target_ahb_speed);
+    }
 
     update_clocks();
 }
 
-LOCAL void set_sysclk(Sysclk_Source sysclk_src) {
+LOCAL void set_sysclk(SysClk_Source sysclk_src) {
     /* Set the system clock as required */
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW_Msk) | (sysclk_src << RCC_CFGR_SW_Pos);
 
     /* ensure it has taken effect */
     while(RCC->CFGR & RCC_CFGR_SWS_Msk != sysclk_src << RCC_CFGR_SWS_Pos);
+
+    /* update status */
+    sysclk_source = sysclk_src;
 }
 
 LOCAL void hse_on() {
@@ -231,9 +247,6 @@ LOCAL uint32_t get_pll_src_speed() {
 
 	case 3:		/* HSE - 24 MHz */
 	    return __MHz(24);
-
-	default:
-	    return 0;
     }
 }
 
@@ -290,58 +303,63 @@ LOCAL void set_pllr(uint32_t r) {
 
 LOCAL void set_ahb_presc(const uint16_t ahb_presc) {
 
-    uint32_t hpre;
+    /* HPRE bits */
+    uint32_t hpre = ahb_presc << RCC_CFGR_HPRE_Pos;
 
     /* clear HPRE bits */
     RCC->CFGR &= ~RCC_CFGR_HPRE;
-
-    /* determine HPRE bits */
-    switch(ahb_presc) {
-	case 1U:
-	    hpre = 0x0U << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 2U:
-	    hpre = 0x8U << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 4U:
-	    hpre = 0x9U << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 8U:
-	    hpre = 0xAU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 16U:
-	    hpre = 0xBU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 64U:
-	    hpre = 0xCU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 128U:
-	    hpre = 0xDU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 256U:
-	    hpre = 0xEU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	case 512U:
-	    hpre = 0xFU << RCC_CFGR_HPRE_Pos;
-	    break;
-
-	default:
-	    /* TODO: system reset or somethng? */
-	    hpre = 0;
-	    break;
-    }
 
     /* write HPRE bits */
     RCC->CFGR |= hpre;
 
     /* ensure it has taken */
     while((RCC->CFGR & hpre) != hpre);
+
+    update_hclk();
+}
+
+LOCAL void configure_pll(PLLClk_Source pll_src, const uint32_t m, const uint32_t n, const uint32_t r) {
+
+    disable_pll();
+
+    /* clear PLL M,N,R and clock source bits */
+    RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLM | ~RCC_PLLCFGR_PLLN | ~RCC_PLLCFGR_PLLR | ~RCC_PLLCFGR_PLLSRC | ~RCC_PLLCFGR_PLLREN;
+
+    /* set M, N and R */
+    set_pllm(m);
+    set_plln(n);
+    set_pllr(r);
+
+    /* select clock source */
+    switch(pll_src) {
+	case PLLClk_HSE:
+	    hse_on();
+	    RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSE;
+	    break;
+
+	case PLLClk_HSI:
+	    hsi_on();
+	    RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSI;
+	    break;
+    }
+
+    enable_pll();
+}
+
+LOCAL void transition(SysClk_Source sysclk_src) {
+
+    /* set AHB prescaler to divide by 2 */
+    set_ahb_presc(HPRE_2);
+
+    set_sysclk(sysclk_src);
+
+    /* wait for atleast 1us */
+    for(volatile int i = 0; i < 100; ++i);
+
+    /* set AHB prescaler to no division */
+    set_ahb_presc(HPRE_1);
+}
+
+LOCAL SysClk_Source get_sysclk_source() {
+    return sysclk_source;
 }
