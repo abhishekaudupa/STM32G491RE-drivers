@@ -1,5 +1,6 @@
 #include "stm32g491xx.h"
 
+/* public interface */
 void enable_user_led();
 void disable_user_led();
 void user_led_on();

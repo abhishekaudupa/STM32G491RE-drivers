@@ -3,6 +3,7 @@
 
 #include "startup.h"
 
+/* public interface */
 void delay(const uint32_t ms);
 void enable_systick();
 

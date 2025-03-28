@@ -11,17 +11,17 @@ void update_flash_read_latency(const uint32_t ahb_speed) {
 
 	case 2:		/* Range 2*/
 	    if(ahb_speed <= __MHz(12)) {
-		set_flash_read_latency(0);
+		set_flash_read_latency(FLASH_LATENCY_0);
 		break;
 	    }
 
 	    if(ahb_speed <= __MHz(24)) {
-		set_flash_read_latency(1);
+		set_flash_read_latency(FLASH_LATENCY_1);
 		break;
 	    }
 
 	    if(ahb_speed <= __MHz(26)) {
-		set_flash_read_latency(2);
+		set_flash_read_latency(FLASH_LATENCY_2);
 		break;
 	    }
     }

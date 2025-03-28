@@ -3,8 +3,8 @@
 
 #include "config.h"
 
-#define __MHz(n)	(n * 1000000)
-#define __kHz(n)	(n * 1000)
+#define __MHz(n)	(n * 1000000U)
+#define __kHz(n)	(n * 1000U)
 
 typedef enum {
     SYSCLK_HSI16	= 1U,
@@ -12,6 +12,7 @@ typedef enum {
     SYSCLK_PLL		= 3U
 } Sysclk_Source;
 
+/* internal helper functions */
 LOCAL void 	set_sysclk(Sysclk_Source sysclk_src);
 LOCAL void 	hse_on();
 LOCAL void 	hsi_on();
@@ -31,6 +32,7 @@ LOCAL void 	set_plln();
 LOCAL void 	set_pllr();
 LOCAL void 	set_ahb_presc(const uint16_t ahb_presc);
 
+/* public interface */
 uint32_t 	get_sysclk_speed();
 uint32_t 	get_hclk_speed();
 uint32_t 	get_pclk1_speed();

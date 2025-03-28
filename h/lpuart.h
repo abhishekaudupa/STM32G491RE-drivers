@@ -6,11 +6,13 @@
 
 //#define LPUART1_POLL_MODE
 
+/* internal helper functions */
 LOCAL uint32_t 	get_lpuart1_clock_speed();
 LOCAL uint32_t 	get_lpuart1_presc();
 LOCAL void 	set_lpuart1_presc(const uint32_t presc);
 LOCAL void 	set_lpuart1_word_len(const uint8_t len);
 
+/* public interface */
 void 		init_lpuart1(const uint32_t baud_rate);
 void 		tx_lpuart1(const char *data);
 void 		tx_single_lpuart1(const char *const data);
