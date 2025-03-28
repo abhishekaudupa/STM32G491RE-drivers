@@ -33,13 +33,15 @@ uint32_t get_pclk2_speed() {
     return pclk2;
 }
 
+void set_sysclk_hsi() {
+    hsi_on();
+    transition(__MHz(16), SysClk_HSI16);
+    update_clocks();
+}
+
 void set_sysclk_hse() {
     hse_on();
-
-    update_flash_read_latency(__MHz(24));
-
-    set_sysclk(SysClk_HSE);
-
+    transition(__MHz(24), SysClk_HSE);
     update_clocks();
 }
 
@@ -62,12 +64,9 @@ void set_sysclk_pll(PLLClk_Source pll_src,
 	/* 
 	 * we cannot configure the PLL while it is being 
 	 * used as the system clock source. So we're gonna
-	 * temporarily switch to HSE.
+	 * temporarily switch to HSI16.
 	 */
-	enable_user_led();
-	enable_systick();
-	user_led_blink(70);
-	return;
+	set_sysclk_hsi();
     }
 
     configure_pll(pll_src, m, n, r);
@@ -75,19 +74,8 @@ void set_sysclk_pll(PLLClk_Source pll_src,
     /* enable PLL R output */
     RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;
 
-    /*
-     * If system clock speed increases after this, we must first 
-     * set the appropriate flash read latency and then switch the 
-     * clock. If system clock speed decreases we must switch the 
-     * clock and then set the appropriate flash read latency. 
-     */
-    if(target_ahb_speed >= get_sysclk_speed()) {
-	update_flash_read_latency(target_ahb_speed);
-	transition(SysClk_PLL);
-    } else {
-	transition(SysClk_PLL);
-	update_flash_read_latency(target_ahb_speed);
-    }
+    /* switch the system clock to PLL */
+    transition(target_ahb_speed, SysClk_PLL);
 
     update_clocks();
 }
@@ -97,7 +85,7 @@ LOCAL void set_sysclk(SysClk_Source sysclk_src) {
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW_Msk) | (sysclk_src << RCC_CFGR_SW_Pos);
 
     /* ensure it has taken effect */
-    while(RCC->CFGR & RCC_CFGR_SWS_Msk != sysclk_src << RCC_CFGR_SWS_Pos);
+    while((RCC->CFGR & RCC_CFGR_SWS_Msk) != (sysclk_src << RCC_CFGR_SWS_Pos));
 
     /* update status */
     sysclk_source = sysclk_src;
@@ -346,17 +334,38 @@ LOCAL void configure_pll(PLLClk_Source pll_src, const uint32_t m, const uint32_t
     enable_pll();
 }
 
-LOCAL void transition(SysClk_Source sysclk_src) {
+LOCAL void transition(const uint32_t target_ahb_speed, SysClk_Source sysclk_src) {
+    /*
+     * If system clock speed increases after this, we must first 
+     * set the appropriate flash read latency and then switch the 
+     * clock. If system clock speed decreases we must switch the 
+     * clock and then set the appropriate flash read latency. 
+     */
+    if(target_ahb_speed >= get_sysclk_speed()) {
+	update_flash_read_latency(target_ahb_speed);
+	transition_internal(sysclk_src);
+    } else {
+	transition_internal(sysclk_src);
+	update_flash_read_latency(target_ahb_speed);
+    }
+}
 
-    /* set AHB prescaler to divide by 2 */
+LOCAL void transition_internal(SysClk_Source sysclk_src) {
+
+    /* This is a little dance that the datasheet requires us 
+     * to do if the system clock speed crosses the threshold 
+     * of 80MHz from below or above. But I've chosen to do 
+     * this dance regardless. */
+
+    /* set AHB prescaler to divide by 2 - dance move */
     set_ahb_presc(HPRE_2);
 
     set_sysclk(sysclk_src);
 
-    /* wait for atleast 1us */
+    /* wait for atleast 1us - dance move */
     for(volatile int i = 0; i < 100; ++i);
 
-    /* set AHB prescaler to no division */
+    /* set AHB prescaler to no division - dance move */
     set_ahb_presc(HPRE_1);
 }
 

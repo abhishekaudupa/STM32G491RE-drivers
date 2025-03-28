@@ -1,4 +1,6 @@
 #include "stm32g491xx.h"
+#include "nucleoG491RE.h"
+#include "config.h"
 #include "flash.h"
 #include "power.h"
 #include "clock.h"
@@ -44,7 +46,7 @@ LOCAL void update_flash_read_latency_r1(const uint32_t target_ahb_speed) {
     for(uint32_t i = 1; i <= 5; ++i)
 	if(target_ahb_speed <= (ahb_ref * i)) {
 	    set_flash_read_latency(i - 1);
-	    break;
+	    return;
 	}
 }
 

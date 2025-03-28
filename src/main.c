@@ -11,10 +11,23 @@
 #include "deviceid.h"
 
 void main(void) {
+    enable_user_led();
+    enable_systick();
+
     init_lpuart1(115200);
     my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
     
     set_sysclk_pll(PLL_HSE24_144);
+    init_lpuart1(115200);
+    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
+    
+    set_sysclk_hsi();
+    user_led_on();
+    init_lpuart1(115200);
+    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
+
+
+    set_sysclk_pll(PLL_HSE24_96);
     init_lpuart1(115200);
     my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
 

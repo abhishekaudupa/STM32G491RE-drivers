@@ -120,7 +120,8 @@ LOCAL void 		set_plln();
 LOCAL void 		set_pllr();
 LOCAL void 		set_ahb_presc(const uint16_t ahb_presc);
 LOCAL void 		configure_pll(PLLClk_Source pll_src, const uint32_t m, const uint32_t n, const uint32_t r);
-LOCAL void 		transition(SysClk_Source sysclk_src);
+LOCAL void 		transition(const uint32_t target_ahb_speed, SysClk_Source sysclk_src);
+LOCAL void 		transition_internal(SysClk_Source sysclk_src);
 LOCAL SysClk_Source	get_sysclk_source();
 
 /* public interface */
@@ -129,6 +130,7 @@ uint32_t 		get_hclk_speed();
 uint32_t 		get_pclk1_speed();
 uint32_t 		get_pclk2_speed();
 void 			update_clocks();
+void 			set_sysclk_hsi();
 void 			set_sysclk_hse();
 void 			set_sysclk_pll(PLLClk_Source pll_src, const uint32_t m, const uint32_t n, const uint32_t r, const uint32_t target_ahb_speed);
 
