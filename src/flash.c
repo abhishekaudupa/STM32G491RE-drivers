@@ -2,43 +2,36 @@
 #include "nucleoG491RE.h"
 #include "config.h"
 #include "flash.h"
-#include "power.h"
 #include "clock.h"
 
 void update_flash_read_latency(const uint32_t target_ahb_speed) {
-    switch(get_vos()) {
-	case 1:		/* Range 1 */
-	    update_flash_read_latency_r1(target_ahb_speed);
-	    break;
 
-	case 2:		/* Range 2*/
-	    if(target_ahb_speed <= __MHz(12)) {
-		set_flash_read_latency(FLASH_LATENCY_0);
-		break;
-	    }
+    /* Refer RM0440 Rev 8 Table 19 */
+    switch(get_vcore_power_mode()) {
+	case VCore_Range_1_Normal:
+	    update_flash_read_latency_r1(target_ahb_speed, VCore_Range_1_Normal);
+	    return;
 
-	    if(target_ahb_speed <= __MHz(24)) {
-		set_flash_read_latency(FLASH_LATENCY_1);
-		break;
-	    }
+	case VCore_Range_1_Boost:
+	    update_flash_read_latency_r1(target_ahb_speed, VCore_Range_1_Boost);
+	    return;
 
-	    if(target_ahb_speed <= __MHz(26)) {
-		set_flash_read_latency(FLASH_LATENCY_2);
-		break;
-	    }
+	case VCore_Range_2:
+	    update_flash_read_latency_r2(target_ahb_speed);
+	    return;
     }
 }
 
-LOCAL void update_flash_read_latency_r1(const uint32_t target_ahb_speed) {
+LOCAL void update_flash_read_latency_r1(const uint32_t target_ahb_speed, VCore_Power_Mode r1_mode) {
     uint32_t ahb_ref;
 
     /* Refer RM0440 Rev 8 Table 19 */
-    switch(get_r1_mode()) {
-	case 0:		/* Boost Mode */
+    switch(r1_mode) {
+	case VCore_Range_1_Boost:
 	    ahb_ref = __MHz(34);
 	    break;
 
-	case 1:		/* Normal Mode */
+	case VCore_Range_1_Normal:
 	    ahb_ref = __MHz(30);
 	    break;
     }
@@ -48,6 +41,23 @@ LOCAL void update_flash_read_latency_r1(const uint32_t target_ahb_speed) {
 	    set_flash_read_latency(i - 1);
 	    return;
 	}
+}
+
+LOCAL void update_flash_read_latency_r2(const uint32_t target_ahb_speed) {
+    if(target_ahb_speed <= __MHz(12)) {
+	set_flash_read_latency(FLASH_LATENCY_0);
+	return;
+    }
+
+    if(target_ahb_speed <= __MHz(24)) {
+	set_flash_read_latency(FLASH_LATENCY_1);
+	return;
+    }
+
+    if(target_ahb_speed <= __MHz(26)) {
+	set_flash_read_latency(FLASH_LATENCY_2);
+	return;
+    }
 }
 
 LOCAL void set_flash_read_latency(const uint32_t wait_states) {

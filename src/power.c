@@ -2,34 +2,23 @@
 #include "config.h"
 #include "power.h"
 
-uint32_t get_vos() {
-
+VCore_Power_Mode get_vcore_power_mode() {
+    VCore_Power_Mode mode;
+    
     enable_power_interface();
+    
+    switch(READ_REG_BITS(PWR->CR1, PWR_CR1_VOS)) {
+	case 1:		/* Range 1 */
+	    mode = READ_REG_BITS(PWR->CR5, PWR_CR5_R1MODE)? VCore_Range_1_Normal: VCore_Range_1_Boost;
+	    break;
 
-    /* acquire VOS 
-     * 1 - Range 1
-     * 2 - Range 2
-     */
-    uint32_t vos = READ_REG_BITS(PWR->CR1, PWR_CR1_VOS);
-
-    disable_power_interface();
-
-    return vos;
-}
-
-uint32_t get_r1_mode() {
-
-    enable_power_interface();
-
-    /* acquire R1 mode
-     * 0 - Boost Mode
-     * 1 - Normal Mode
-     */
-    uint32_t r1_mode = READ_REG_BITS(PWR->CR5, PWR_CR5_R1MODE);
-
-    disable_power_interface();
-
-    return r1_mode;
+	case 2:		/* Range 2 */
+	    mode = VCore_Range_2;
+	    break;
+    }
+    
+    disable_power_interface(); 
+    return mode;
 }
 
 LOCAL void enable_power_interface() {

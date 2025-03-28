@@ -2,6 +2,7 @@
 #define __FLASH_H__
 
 #include "config.h"
+#include "power.h"
 
 #define FLASH_LATENCY_0 	0x0U
 #define FLASH_LATENCY_1 	0x1U
@@ -23,7 +24,8 @@
 /* internal helper functions */
 LOCAL void 	enable_flash_interface();
 LOCAL void	disable_flash_interface();
-LOCAL void 	update_flash_read_latency_r1(const uint32_t target_ahb_speed);
+LOCAL void 	update_flash_read_latency_r1(const uint32_t target_ahb_speed, VCore_Power_Mode r1_mode);
+LOCAL void 	update_flash_read_latency_r2(const uint32_t target_ahb_speed);
 LOCAL void 	set_flash_read_latency(const uint32_t wait_states);
 
 /* public interface */

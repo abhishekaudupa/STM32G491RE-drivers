@@ -21,13 +21,7 @@ void main(void) {
     init_lpuart1(115200);
     my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
     
-    set_sysclk_hsi();
-    user_led_on();
-    init_lpuart1(115200);
-    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
-
-
-    set_sysclk_pll(PLL_HSE24_96);
+    set_sysclk_pll(PLL_HSE24_16);
     init_lpuart1(115200);
     my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
 

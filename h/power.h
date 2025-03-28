@@ -3,12 +3,17 @@
 
 #include "config.h"
 
+typedef enum {
+    VCore_Range_1_Boost,
+    VCore_Range_1_Normal,
+    VCore_Range_2,
+} VCore_Power_Mode;
+
 /* internal helper functions */
 LOCAL void 	enable_power_interface();
 LOCAL void 	disable_power_interface();
 
 /* public interface */
-uint32_t 	get_vos();
-uint32_t	get_r1_mode();
+VCore_Power_Mode get_vcore_power_mode();
 
 #endif

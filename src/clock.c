@@ -355,7 +355,7 @@ LOCAL void transition_internal(SysClk_Source sysclk_src) {
     /* This is a little dance that the datasheet requires us 
      * to do if the system clock speed crosses the threshold 
      * of 80MHz from below or above. But I've chosen to do 
-     * this dance regardless. */
+     * this dance regardless; it's just safe. */
 
     /* set AHB prescaler to divide by 2 - dance move */
     set_ahb_presc(HPRE_2);
