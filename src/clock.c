@@ -5,9 +5,6 @@
 
 uint32_t sysclk, hclk, pclk1, pclk2;
 
-#define __MHz(n)	(n * 1000000)
-#define __kHz(n)	(n * 1000)
-
 void update_clocks() {
     /* do not change the order of these calls */
     // TODO: force reset or something if one of these is 0.
@@ -37,7 +34,7 @@ void set_sysclk_hse() {
     hse_on();
 
     /* set flash latency to 0 wait states */
-    set_flash_read_latency(0);
+    update_flash_read_latency(__MHz(24));
 
     set_sysclk(SYSCLK_HSE);
 
@@ -66,11 +63,9 @@ void set_sysclk_pll_100MHz() {
     RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;
 
     /* set flash latency to 3 wait states */
-    set_flash_read_latency(3);
+    update_flash_read_latency(__MHz(100));
 
     /* set AHB prescaler to divide by 2 */
-    //RCC->CFGR &= ~RCC_CFGR_HPRE;
-    //RCC->CFGR |= (8U << RCC_CFGR_HPRE_Pos);
     set_ahb_presc(2);
 
     set_sysclk(SYSCLK_PLL);
@@ -79,8 +74,6 @@ void set_sysclk_pll_100MHz() {
     for(volatile int i = 0; i < 100; ++i);
 
     /* set AHB prescaler to no division */
-    //RCC->CFGR &= ~RCC_CFGR_HPRE;
-    //RCC->CFGR |= (0U << RCC_CFGR_HPRE_Pos);
     set_ahb_presc(1);
 
     update_clocks();
@@ -129,19 +122,20 @@ LOCAL void enable_pll() {
 LOCAL void update_sysclk() {
     // TODO: force reset or something if sysclk is 0.
     switch(READ_REG_BITS(RCC->CFGR, RCC_CFGR_SWS)) {
-	case 1:		/* HSI16 - 16 MHz */
+	case 1U:		/* HSI16 - 16 MHz */
 	    sysclk = __MHz(16);
 	    break;
 
-	case 2:		/* HSE - 24 MHz */
+	case 2U:		/* HSE - 24 MHz */
 	    sysclk = __MHz(24);
 	    break;
 
-	case 3:		/* PLLR - Various */
+	case 3U:		/* PLLR - Various */
 	    sysclk = get_pllr_speed();
 	    break;
 
 	default:
+	    /* TODO: Reset or something? */
 	    break;
     }
 }
@@ -272,7 +266,7 @@ LOCAL void set_pllm(uint32_t m) {
 LOCAL void set_plln(uint32_t n) {
     /* n should only be 7 bits */
     n &= 0x7F;
-    
+
     /* clear PLLN */
     RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLN;
 
@@ -297,7 +291,7 @@ LOCAL void set_pllr(uint32_t r) {
 LOCAL void set_ahb_presc(const uint16_t ahb_presc) {
 
     uint32_t hpre;
-    
+
     /* clear HPRE bits */
     RCC->CFGR &= ~RCC_CFGR_HPRE;
 

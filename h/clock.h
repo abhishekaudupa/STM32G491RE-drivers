@@ -3,6 +3,9 @@
 
 #include "config.h"
 
+#define __MHz(n)	(n * 1000000)
+#define __kHz(n)	(n * 1000)
+
 typedef enum {
     SYSCLK_HSI16	= 1U,
     SYSCLK_HSE		= 2U,
