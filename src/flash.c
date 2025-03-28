@@ -50,7 +50,7 @@ LOCAL void update_flash_read_latency_r1(const uint32_t ahb_speed) {
 
 LOCAL void set_flash_read_latency(uint32_t wait_states) {
 
-    enable_flash_interface_registers();
+    enable_flash_interface();
 
     /* clear flash latency bits */
     FLASH->ACR &= ~FLASH_ACR_LATENCY;
@@ -64,15 +64,15 @@ LOCAL void set_flash_read_latency(uint32_t wait_states) {
     /* ensure it has taken effect */
     while((FLASH->ACR & wait_states) != wait_states);
 
-    disable_flash_interface_registers();
+    disable_flash_interface();
 }
 
-LOCAL void enable_flash_interface_registers() {
+LOCAL void enable_flash_interface() {
     /* set flash enable bit */
     RCC->AHB1ENR |= RCC_AHB1ENR_FLASHEN;
 }
 
-LOCAL void disable_flash_interface_registers() {
+LOCAL void disable_flash_interface() {
     /* clear flash enable bit */
     RCC->AHB1ENR &= ~RCC_AHB1ENR_FLASHEN;
 }
