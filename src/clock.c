@@ -9,8 +9,11 @@ uint32_t sysclk, hclk, pclk1, pclk2;
 SysClk_Source sysclk_source;
 
 void update_clocks() {
-    /* do not change the order of these calls */
-    // TODO: force reset or something if one of these is 0.
+    /* 
+     * do not change the order of these calls. 
+     * hclk depends on sysclk and pclk depends 
+     * on hclk. 
+     */
     update_sysclk();
     update_hclk();
     update_pclk1();
@@ -209,10 +212,10 @@ LOCAL uint32_t get_pllr_speed() {
 
 LOCAL uint32_t get_pll_src_speed() {
     switch(READ_REG_BITS(RCC->PLLCFGR, RCC_PLLCFGR_PLLSRC)) {
-	case 2:		/* HSI16 - 16 MHz */
+	case 2U:		/* HSI16 - 16 MHz */
 	    return __MHz(16);
 
-	case 3:		/* HSE - 24 MHz */
+	case 3U:		/* HSE - 24 MHz */
 	    return __MHz(24);
     }
 }
@@ -229,13 +232,7 @@ LOCAL uint32_t get_pllr() {
     return (READ_REG_BITS(RCC->PLLCFGR, RCC_PLLCFGR_PLLR) + 1) * 2;
 }
 
-LOCAL void set_pllm(uint32_t m) {
-    /* value to be set is 1 less than m */
-    m--;
-
-    /* m should only be 4 bits */
-    m &= 0xF;
-
+LOCAL void set_pllm(const uint32_t m) {
     /* clear PLLM */
     RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLM;
 
@@ -243,10 +240,7 @@ LOCAL void set_pllm(uint32_t m) {
     RCC->PLLCFGR |= m << RCC_PLLCFGR_PLLM_Pos;
 }
 
-LOCAL void set_plln(uint32_t n) {
-    /* n should only be 7 bits */
-    n &= 0x7F;
-
+LOCAL void set_plln(const uint32_t n) {
     /* clear PLLN */
     RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLN;
 
@@ -254,13 +248,7 @@ LOCAL void set_plln(uint32_t n) {
     RCC->PLLCFGR |= n << RCC_PLLCFGR_PLLN_Pos;
 }
 
-LOCAL void set_pllr(uint32_t r) {
-    /* value to be set is 1 less than half of r */
-    r = r/2 - 1;
-
-    /* r should only be 2 bits */
-    r &= 0x3;
-
+LOCAL void set_pllr(const uint32_t r) {
     /* clear PLLR */
     RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLR;
 

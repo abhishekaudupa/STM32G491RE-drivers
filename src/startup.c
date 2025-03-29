@@ -206,6 +206,7 @@ void reset_handler(void) {
 	bss[i] = 0;
     }
 
+    set_sysclk_hse();
     update_clocks();
     main();
     for(;;) (void)0;
