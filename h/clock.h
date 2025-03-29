@@ -112,6 +112,7 @@ LOCAL void 		update_sysclk();
 LOCAL void 		update_hclk();
 LOCAL void 		update_pclk1();
 LOCAL void 		update_pclk2();
+LOCAL void 		update_pclk(uint32_t *const pclk, const uint8_t ppre);
 LOCAL uint32_t 		get_pllm();
 LOCAL uint32_t 		get_plln();
 LOCAL uint32_t 		get_pllr();

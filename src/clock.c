@@ -51,20 +51,26 @@ void set_sysclk_pll(PLLClk_Source pll_src,
 	const uint32_t r, 
 	const uint32_t target_ahb_speed) {
 
-    /*
-     * target_ahb_speed isn't really necessary. 
-     * But since I'm passing it in as a predefined 
-     * macro, having it avoids a few arithmetic 
-     * operations. target_ahb_speed could be 
-     * calculated as: 
-     *   (pll_src clock speed / m) * n / r.
+    /* 
+     * The parameter 'target_ahb_speed' could be calculated using the 
+     * PLL input clock speed, m, n and r. Refer datasheet to see how. 
+     * Yet, I'm passing it into this function as a parameter to avoid 
+     * the arithmetic overhead involved and also because I have 
+     * predefined macros that directly provide these numbers without 
+     * any overhead.
+     * This function is called using predefined macros as function input.
+     * example: set_sysclk_pll(PLL_HSI_48). 
+     * The 'PLL_HSI_48' expands to 'PLLClk_HSIU, 2, 12U, 2U, 48000000U' 
+     * and therefore provides the correct values of these arguments,
+     * precluding the headache of having to calculate these numbers 
+     * programmatically.
      */
 
     if(get_sysclk_source() == SysClk_PLL) {
 	/* 
 	 * we cannot configure the PLL while it is being 
 	 * used as the system clock source. So we're gonna
-	 * temporarily switch to HSI16.
+	 * temporarily switch to HSI16 as the system clock.
 	 */
 	set_sysclk_hsi();
     }
@@ -124,7 +130,6 @@ LOCAL void enable_pll() {
 }
 
 LOCAL void update_sysclk() {
-    // TODO: force reset or something if sysclk is 0.
     switch(READ_REG_BITS(RCC->CFGR, RCC_CFGR_SWS)) {
 	case 1U:		/* HSI16 - 16 MHz */
 	    sysclk = __MHz(16);
@@ -137,80 +142,54 @@ LOCAL void update_sysclk() {
 	case 3U:		/* PLLR - Various */
 	    sysclk = get_pllr_speed();
 	    break;
-
-	default:
-	    /* TODO: Reset or something? */
-	    break;
     }
 }
 
 LOCAL void update_hclk() {
-    // TODO: force reset or something if hclk is 0.
-    uint8_t temp = READ_REG_BITS(RCC->CFGR, RCC_CFGR_HPRE);
-    switch(temp) {
-	case 0:
+    uint8_t hpre = READ_REG_BITS(RCC->CFGR, RCC_CFGR_HPRE);
+    switch(hpre) {
+	case 0U:
 	    hclk = sysclk;
 	    break;
 
-	case 8:
-	case 9:
-	case 10:
-	case 11:
-	    hclk = sysclk / (2 << (temp - 7));
+	case 8U:
+	case 9U:
+	case 10U:
+	case 11U:
+	    hclk = (sysclk >> (hpre - 7));
 	    break;
 
-	case 12:
-	case 13:
-	case 14:
-	case 15:
-	    hclk = sysclk / (2 << (temp - 6));
-	    break;
-
-	default:
-	    hclk = 0;
+	case 12U:
+	case 13U:
+	case 14U:
+	case 15U:
+	    hclk = (sysclk >> (hpre - 6));
 	    break;
     }
 }
 
 LOCAL void update_pclk1() {
-    // TODO: force reset or something if pclk1 is 0.
-    uint8_t temp = READ_REG_BITS(RCC->CFGR, RCC_CFGR_PPRE1);
-    switch(temp) {
-	case 0:
-	    pclk1 = hclk;
-	    break;
-
-	case 4:
-	case 5:
-	case 6:
-	case 7:
-	    pclk1 = hclk / (2 << (temp - 3));
-	    break;
-
-	default:
-	    pclk1 = 0;
-	    break;
-    }
+    uint8_t ppre1 = READ_REG_BITS(RCC->CFGR, RCC_CFGR_PPRE1);
+    update_pclk(&pclk1, ppre1);
 }
 
 LOCAL void update_pclk2() {
-    // TODO: force reset or something if pclk2 is 0.
-    uint8_t temp = READ_REG_BITS(RCC->CFGR, RCC_CFGR_PPRE2);
-    switch(temp) {
-	case 0:
-	    pclk2 = hclk;
-	    break;
+    uint8_t ppre2 = READ_REG_BITS(RCC->CFGR, RCC_CFGR_PPRE2);
+    update_pclk(&pclk2, ppre2);
+}
 
-	case 4:
-	case 5:
-	case 6:
-	case 7:
-	    pclk2 = hclk / (2 << (temp - 3));
-	    break;
+LOCAL void update_pclk(uint32_t *const pclk, const uint8_t ppre) {
+    switch(ppre) {
+	case 0U:
+	    *pclk = hclk;
+	    return;
 
-	default:
-	    pclk2 = 0;
-	    break;
+	case 4U:
+	case 5U:
+	case 6U:
+	case 7U:
+	    *pclk = (hclk >> (ppre - 3));
+	    return;
     }
 }
 

@@ -15,15 +15,27 @@ void main(void) {
     enable_systick();
 
     init_lpuart1(115200);
-    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
+    my_printf("lpuart initialized. sysclk is %d MHz, ahbclk is %d MHz, pclk1 = %d MHz and pclk2 = %d MHz\n", 
+	    get_sysclk_speed() / 1000000, 
+	    get_hclk_speed() / 1000000,
+	    get_pclk1_speed() / 1000000,
+	    get_pclk2_speed() / 1000000);
     
     set_sysclk_pll(PLL_HSE24_144);
     init_lpuart1(115200);
-    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
+    my_printf("lpuart initialized. sysclk is %d MHz, ahbclk is %d MHz, pclk1 = %d MHz and pclk2 = %d MHz\n", 
+	    get_sysclk_speed() / 1000000, 
+	    get_hclk_speed() / 1000000,
+	    get_pclk1_speed() / 1000000,
+	    get_pclk2_speed() / 1000000);
     
     set_sysclk_pll(PLL_HSE24_16);
     init_lpuart1(115200);
-    my_printf("lpuart initialized. sysclk is %d MHz\n", get_sysclk_speed() / 1000000);
+    my_printf("lpuart initialized. sysclk is %d MHz, ahbclk is %d MHz, pclk1 = %d MHz and pclk2 = %d MHz\n", 
+	    get_sysclk_speed() / 1000000, 
+	    get_hclk_speed() / 1000000,
+	    get_pclk1_speed() / 1000000,
+	    get_pclk2_speed() / 1000000);
 
 #ifdef LPUART1_POLL_MODE
     char buf[256];
