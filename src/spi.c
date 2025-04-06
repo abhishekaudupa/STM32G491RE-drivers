@@ -1,4 +1,5 @@
 #include "spi.h"
+#include "gpio.h"
 
 void 		enable_spi_interface(SPI_Channel spi_chan);
 void 		disable_spi_interface(SPI_Channel spi_chan);
@@ -12,6 +13,8 @@ void 		set_spi_clock_pha(SPI_TypeDef *const SPIx, SPI_Clock_Pha clk_pha);
 void 		set_spi_frame_format(SPI_TypeDef *const SPIx, SPI_Frame_Format frm_fmt);
 void 		set_spi_full_duplex(SPI_TypeDef *const SPIx);
 void 		set_spi_half_duplex(SPI_TypeDef *const SPIx);
+void 		set_spi_simplex_transmit(SPI_TypeDef *const SPIx);
+void 		set_spi_simplex_receive(SPI_TypeDef *const SPIx);
 void 		set_spi_single_master_mode(SPI_TypeDef *const SPIx);
 void 		set_spi_multi_master_mode(SPI_TypeDef *const SPIx);
 void 		set_spi_slave_mode(SPI_TypeDef *const SPIx);
@@ -23,36 +26,22 @@ uint16_t tbuf_size, ti;
 
 void spi1_IRQ_handler() {
     if(SPI1->SR & SPI_SR_TXE) {
-	if(tbuf_size) {
-	    SPI1->DR = tbuf[ti - tbuf_size];
-	    tbuf_size--;
-	} else {
-	    SPI1->CR2 &= ~SPI_CR2_TXEIE;
-	}
+	if(SPI1->CR2 & SPI_CR2_TXEIE) {
+	    if(tbuf_size) {
+		uint16_t val = tbuf[ti - tbuf_size];
+		tbuf_size--;
+		val |= tbuf[ti - tbuf_size] << 8;
+		tbuf_size--;
+		SPI1->DR = val;
+	    } else {
+		SPI1->CR2 &= ~SPI_CR2_TXEIE;
+	    } 
+	}	
     }
 
-    if(SPI1->SR & SPI_SR_RXNE) {
-	uint8_t lvl = (SPI1->SR & SPI_SR_FRLVL) >> SPI_SR_FRLVL_Pos;
-
-	if(lvl == 0x1U) {
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
-	}
-
-	if(lvl == 0x2U) {
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
-	}
-
-	if(lvl == 0x3U) {
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
-	    rbuf[*rwi] = SPI1->DR;
-	    (*rwi)++;
+    if(SPI1->CR2 & SPI_CR2_RXNEIE) {
+	if(SPI1->SR & SPI_SR_RXNE) {
+	    uint8_t lvl = (SPI1->SR & SPI_SR_FRLVL) >> SPI_SR_FRLVL_Pos;
 	    rbuf[*rwi] = SPI1->DR;
 	    (*rwi)++;
 	}
@@ -82,9 +71,6 @@ void init_spi(SPI_Channel spi_chan,
     /* multiplex the relevant GPIO pins to SPI functionality */
     set_spi_gpio_af(spi_chan);
 
-    /* master vs. slave mode.*/
-    set_spi_mode(SPIx, spi_mode);
-
     /* clock polarity setting */
     set_spi_clock_pol(SPIx, spi_cpol);
 
@@ -97,8 +83,18 @@ void init_spi(SPI_Channel spi_chan,
     /* msb vs lsb first */
     set_spi_frame_format(SPIx, spi_fmt);
 
+    /* master vs. slave mode.*/
+    set_spi_mode(SPIx, spi_mode);
+
     /* transaction data length in bits */
     set_spi_datasize(SPIx, spi_datasize);
+
+}
+
+void spi_start(SPI_Channel spi_chan) {
+
+    /* acquire SPI register base address */
+    SPI_TypeDef *SPIx = get_spi_baseaddr(spi_chan);
 
     /* enable interrupts */
     __enable_irq();
@@ -108,7 +104,6 @@ void init_spi(SPI_Channel spi_chan,
 
     /* fire-up the SPI */
     SPIx->CR1 |= SPI_CR1_SPE;
-
 }
 
 void spi_config_rxbuffer(volatile uint8_t *rxbuf, volatile uint8_t *rxbuf_windex) {
@@ -162,11 +157,11 @@ void set_spi_comm_mode(SPI_TypeDef *const SPIx, SPI_Comm_Mode spi_comm_mode) {
 	    return;
 
 	case SPI_Comm_Simplex_Receive:
-	    SPIx->CR1 |= SPI_CR1_RXONLY;
+	    set_spi_simplex_receive(SPIx);
 	    return;
 
 	case SPI_Comm_Simplex_Transmit:
-	    set_spi_full_duplex(SPIx);
+	    set_spi_simplex_transmit(SPIx);
 	    return;
     }
 }
@@ -189,6 +184,9 @@ void enable_spi_interface(SPI_Channel spi_chan) {
 	    RCC->APB1ENR1 |= RCC_APB1ENR1_SPI3EN;
 	    break;
     }
+
+    /* wait for 2 clock cycles. */
+    __WAIT_2_CLOCKS__;
 }
 
 void disable_spi_interface(SPI_Channel spi_chan) {
@@ -282,6 +280,19 @@ void set_spi_half_duplex(SPI_TypeDef *const SPIx) {
     SPIx->CR1 |= SPI_CR1_BIDIMODE;
 }
 
+void set_spi_simplex_transmit(SPI_TypeDef *const SPIx) {
+    /* setting same as full duplex. Ignore the unnecessary pin: MISO or MOSI */
+    set_spi_full_duplex(SPIx);
+}
+
+void set_spi_simplex_receive(SPI_TypeDef *const SPIx) {
+    /* clear bidirection data bit */
+    SPIx->CR1 &= ~SPI_CR1_BIDIMODE;
+    
+    /* set rxonly bit */
+    SPIx->CR1 |= SPI_CR1_RXONLY;
+}
+
 void set_spi_single_master_mode(SPI_TypeDef *const SPIx) {
 
     /* set the master mode bit */
@@ -310,6 +321,7 @@ void set_spi_slave_mode(SPI_TypeDef *const SPIx) {
 
     /* clear the master mode bit */
     SPIx->CR1 &= ~SPI_CR1_MSTR;
+
 }
 
 void set_spi_gpio_af(SPI_Channel spi_chan) {
@@ -320,25 +332,18 @@ void set_spi_gpio_af(SPI_Channel spi_chan) {
 	    /* PA5, PB3  is clk,  af5 */
 	    /* PA6, PB4  is miso, af5 */
 	    /* PA7, PB5  is mosi, af5 */
-	    GPIOA->MODER &= ~GPIO_MODER_MODE4;
-	    GPIOA->MODER &= ~GPIO_MODER_MODE5;
-	    GPIOA->MODER &= ~GPIO_MODER_MODE6;
-	    GPIOA->MODER &= ~GPIO_MODER_MODE7;
 
-	    GPIOA->MODER |= (0x2U << GPIO_MODER_MODE4_Pos);
-	    GPIOA->MODER |= (0x2U << GPIO_MODER_MODE5_Pos);
-	    GPIOA->MODER |= (0x2U << GPIO_MODER_MODE6_Pos);
-	    GPIOA->MODER |= (0x2U << GPIO_MODER_MODE7_Pos);
+	    enable_gpio_interface(GPIO_PA);
 
-	    GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL4;
-	    GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL5;
-	    GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL6;
-	    GPIOA->AFR[0] &= ~GPIO_AFRL_AFSEL7;
+	    set_gpio_mode(GPIO_PA, GPIO_Pin_4, GPIO_Mode_Alternate);
+	    set_gpio_mode(GPIO_PA, GPIO_Pin_5, GPIO_Mode_Alternate);
+	    set_gpio_mode(GPIO_PA, GPIO_Pin_6, GPIO_Mode_Alternate);
+	    set_gpio_mode(GPIO_PA, GPIO_Pin_7, GPIO_Mode_Alternate);
 
-	    GPIOA->AFR[0] |= (0x5U << GPIO_AFRL_AFSEL4_Pos);
-	    GPIOA->AFR[0] |= (0x5U << GPIO_AFRL_AFSEL5_Pos);
-	    GPIOA->AFR[0] |= (0x5U << GPIO_AFRL_AFSEL6_Pos);
-	    GPIOA->AFR[0] |= (0x5U << GPIO_AFRL_AFSEL7_Pos);
+	    set_gpio_af(GPIO_PA, GPIO_Pin_4, GPIO_AF5);
+	    set_gpio_af(GPIO_PA, GPIO_Pin_5, GPIO_AF5);
+	    set_gpio_af(GPIO_PA, GPIO_Pin_6, GPIO_AF5);
+	    set_gpio_af(GPIO_PA, GPIO_Pin_7, GPIO_AF5);
 
 	    return;
 

@@ -77,12 +77,10 @@ void init_lpuart1(const uint32_t baud_rate) {
 
     /* set PA2 as TX (AF12) */
     set_gpio_mode(GPIO_PA, GPIO_Pin_2, GPIO_Mode_Alternate);
-    //GPIOA->AFR[0] |= (12U << GPIO_AFRL_AFSEL2_Pos);
     set_gpio_af(GPIO_PA, GPIO_Pin_2, GPIO_AF12);
 
     /* set PA3 as RX (AF12) */
     set_gpio_mode(GPIO_PA, GPIO_Pin_3, GPIO_Mode_Alternate);
-    //GPIOA->AFR[0] |= (12U << GPIO_AFRL_AFSEL3_Pos);
     set_gpio_af(GPIO_PA, GPIO_Pin_3, GPIO_AF12);
 
     /* set lpuart1 baud rate */
