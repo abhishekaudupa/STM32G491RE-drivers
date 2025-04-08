@@ -20,9 +20,9 @@ void 		set_spi_multi_master_mode(SPI_TypeDef *const SPIx);
 void 		set_spi_slave_mode(SPI_TypeDef *const SPIx);
 void 		set_spi_gpio_af(SPI_Channel spi_chan);
 
-volatile uint8_t *rbuf, *tbuf;
-volatile uint8_t *rwi;
-uint16_t tbuf_size, ti;
+volatile uint16_t *rbuf, *tbuf;
+volatile uint16_t *rwi;
+uint16_t tbuf_size, ti, dummy;
 
 void spi1_IRQ_handler() {
     if(SPI1->SR & SPI_SR_TXE) {
@@ -41,7 +41,6 @@ void spi1_IRQ_handler() {
 
     if(SPI1->CR2 & SPI_CR2_RXNEIE) {
 	if(SPI1->SR & SPI_SR_RXNE) {
-	    uint8_t lvl = (SPI1->SR & SPI_SR_FRLVL) >> SPI_SR_FRLVL_Pos;
 	    rbuf[*rwi] = SPI1->DR;
 	    (*rwi)++;
 	}
@@ -88,7 +87,6 @@ void init_spi(SPI_Channel spi_chan,
 
     /* transaction data length in bits */
     set_spi_datasize(SPIx, spi_datasize);
-
 }
 
 void spi_start(SPI_Channel spi_chan) {
@@ -106,12 +104,12 @@ void spi_start(SPI_Channel spi_chan) {
     SPIx->CR1 |= SPI_CR1_SPE;
 }
 
-void spi_config_rxbuffer(volatile uint8_t *rxbuf, volatile uint8_t *rxbuf_windex) {
+void spi_config_rxbuffer(volatile void *rxbuf, volatile uint16_t *rxbuf_windex) {
     rbuf = rxbuf;
     rwi = rxbuf_windex;
 }
 
-void spi_config_txbuffer(volatile uint8_t *txbuf, const uint16_t txbuf_size) {
+void spi_config_txbuffer(volatile void *txbuf, const uint16_t txbuf_size) {
     tbuf = txbuf;
     tbuf_size = ti = txbuf_size;
 }
@@ -186,7 +184,7 @@ void enable_spi_interface(SPI_Channel spi_chan) {
     }
 
     /* wait for 2 clock cycles. */
-    __WAIT_2_CLOCKS__;
+    __WAIT_2_CLOCKS();
 }
 
 void disable_spi_interface(SPI_Channel spi_chan) {
@@ -216,7 +214,12 @@ void set_spi_datasize(SPI_TypeDef *const SPIx, SPI_Datasize spi_datasize) {
     /* set the new datasize bits */
     SPIx->CR2 |= (spi_datasize << SPI_CR2_DS_Pos);
 
-    /* rxfifo interrupt threshold setting. If datasize is less than 16 bits, receive interrupt when rxfifo is 1/4th or more full. Otherwise receive interrupt when rxfifo is 1/2 or more full. */
+    /* 
+     * rxfifo interrupt threshold setting. If datasize 
+     * is less than 16 bits, receive interrupt when 
+     * rxfifo is 1/4th or more full. Otherwise receive 
+     * interrupt when rxfifo is 1/2 or more full. 
+     */
     if(spi_datasize < SPI_DATASIZE_16) 
 	SPIx->CR2 |= SPI_CR2_FRXTH;
     else
@@ -288,7 +291,7 @@ void set_spi_simplex_transmit(SPI_TypeDef *const SPIx) {
 void set_spi_simplex_receive(SPI_TypeDef *const SPIx) {
     /* clear bidirection data bit */
     SPIx->CR1 &= ~SPI_CR1_BIDIMODE;
-    
+
     /* set rxonly bit */
     SPIx->CR1 |= SPI_CR1_RXONLY;
 }
@@ -327,23 +330,15 @@ void set_spi_slave_mode(SPI_TypeDef *const SPIx) {
 void set_spi_gpio_af(SPI_Channel spi_chan) {
     switch(spi_chan) {
 	case SPI_Channel_1:
-	    RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
 	    /* PA4, PA15 af nss,  af5 */
 	    /* PA5, PB3  is clk,  af5 */
 	    /* PA6, PB4  is miso, af5 */
 	    /* PA7, PB5  is mosi, af5 */
 
-	    enable_gpio_interface(GPIO_PA);
-
-	    set_gpio_mode(GPIO_PA, GPIO_Pin_4, GPIO_Mode_Alternate);
-	    set_gpio_mode(GPIO_PA, GPIO_Pin_5, GPIO_Mode_Alternate);
-	    set_gpio_mode(GPIO_PA, GPIO_Pin_6, GPIO_Mode_Alternate);
-	    set_gpio_mode(GPIO_PA, GPIO_Pin_7, GPIO_Mode_Alternate);
-
-	    set_gpio_af(GPIO_PA, GPIO_Pin_4, GPIO_AF5);
-	    set_gpio_af(GPIO_PA, GPIO_Pin_5, GPIO_AF5);
-	    set_gpio_af(GPIO_PA, GPIO_Pin_6, GPIO_AF5);
-	    set_gpio_af(GPIO_PA, GPIO_Pin_7, GPIO_AF5);
+	    init_gpio_as_af(GPIO_PA, GPIO_Pin_4, GPIO_AF5);
+	    init_gpio_as_af(GPIO_PA, GPIO_Pin_5, GPIO_AF5);
+	    init_gpio_as_af(GPIO_PA, GPIO_Pin_6, GPIO_AF5);
+	    init_gpio_as_af(GPIO_PA, GPIO_Pin_7, GPIO_AF5);
 
 	    return;
 

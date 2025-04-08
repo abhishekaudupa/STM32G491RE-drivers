@@ -10,7 +10,7 @@
 
 #define READ_REG_BITS(REG, BITS)	((REG & BITS) >> BITS##_Pos)
 
-#define __WAIT_2_CLOCKS__		__attribute__((unused))volatile uint32_t dummy = RCC->AHB1ENR; \
+#define __WAIT_2_CLOCKS()		__attribute__((unused))volatile uint32_t dummy = RCC->AHB1ENR; \
 											 dummy = RCC->AHB1ENR
 
 #endif

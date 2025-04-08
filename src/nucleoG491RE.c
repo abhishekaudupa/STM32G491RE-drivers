@@ -44,6 +44,10 @@ void enable_user_button() {
     set_gpio_mode(GPIO_PC, GPIO_Pin_13, GPIO_Mode_Input);    
 }
 
+uint8_t is_user_button_pressed() {
+    return (GPIOC->IDR & GPIO_IDR_ID13)? 1U: 0U;
+}
+
 void disable_user_button() {
     /* reset user button: analog mode */
     set_gpio_mode(GPIO_PC, GPIO_Pin_13, GPIO_Mode_Analog);    

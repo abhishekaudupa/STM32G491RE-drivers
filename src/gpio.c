@@ -2,6 +2,31 @@
 
 LOCAL GPIO_TypeDef* get_gpio_base_address(GPIO_Port gpio_port);
 
+void init_gpio_as_input(GPIO_Port gpio_port, GPIO_Pin gpio_pin) {
+    enable_gpio_interface(gpio_port);
+    set_gpio_mode(gpio_port, gpio_pin, GPIO_Mode_Input);
+}
+
+void init_gpio_as_output_push_pull(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Speed gpio_speed) {
+    enable_gpio_interface(gpio_port);
+    set_gpio_mode(gpio_port, gpio_pin, GPIO_Mode_Output);
+    set_gpio_output_mode(gpio_port, gpio_pin, GPIO_Output_Push_Pull);
+    set_gpio_output_speed(gpio_port, gpio_pin, gpio_speed);
+}
+
+void init_gpio_as_output_open_drain(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Speed gpio_speed) {
+    enable_gpio_interface(gpio_port);
+    set_gpio_mode(gpio_port, gpio_pin, GPIO_Mode_Output);
+    set_gpio_output_mode(gpio_port, gpio_pin, GPIO_Output_Open_Drain);
+    set_gpio_output_speed(gpio_port, gpio_pin, gpio_speed);
+}
+
+void init_gpio_as_af(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_AF gpio_af) {
+    enable_gpio_interface(gpio_port);
+    set_gpio_mode(gpio_port, gpio_pin, GPIO_Mode_Alternate);
+    set_gpio_af(gpio_port, gpio_pin, gpio_af);
+}
+
 void set_gpio_af(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_AF gpio_af) {
     uint8_t af_bit_pos = 0;
     uint8_t af_index = 0;
@@ -75,10 +100,9 @@ void enable_gpio_interface(GPIO_Port gpio_port) {
 
     /* 
      * Wait for at least two clock cycles for the clock to take effect. 
-     * If not, wait for a billion cycles debugging.
+     * If not, wait for a million cycles debugging.
      */
-    __attribute__((unused))volatile uint32_t dummy = RCC->AHB2ENR;
-    dummy = RCC->AHB2ENR;
+    __WAIT_2_CLOCKS();
 }
 
 void disable_gpio_interface(GPIO_Port gpio_port) {

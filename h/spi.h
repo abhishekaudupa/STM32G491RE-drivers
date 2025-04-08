@@ -72,7 +72,7 @@ void init_spi(SPI_Channel spi_chan,
 	SPI_Frame_Format spi_fmt, 
 	SPI_Datasize spi_datasize);
 void spi_start(SPI_Channel spi_chan);
-void spi_config_rxbuffer(volatile uint8_t *rxbuf, volatile uint8_t *rxbuf_windex);
-void spi_config_txbuffer(volatile uint8_t *txbuf, const uint16_t txbuf_size);
+void spi_config_rxbuffer(volatile void *rxbuf, volatile uint16_t *rxbuf_windex);
+void spi_config_txbuffer(volatile void *txbuf, const uint16_t txbuf_size);
 
 #endif

@@ -83,6 +83,10 @@ typedef enum {
     GPIO_AF15	= 0xFU
 } GPIO_AF;
 
+void init_gpio_as_input(GPIO_Port gpio_port, GPIO_Pin gpio_pin);
+void init_gpio_as_output_push_pull(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Speed gpio_speed);
+void init_gpio_as_output_open_drain(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Speed gpio_speed);
+void init_gpio_as_af(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_AF gpio_af);
 void set_gpio_af(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_AF gpio_af);
 void set_gpio_output_resistor(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Resistor gpio_res);
 void set_gpio_output_speed(GPIO_Port gpio_port, GPIO_Pin gpio_pin, GPIO_Speed gpio_speed);

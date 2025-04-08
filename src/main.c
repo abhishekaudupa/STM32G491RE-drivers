@@ -19,8 +19,13 @@ int main(void) {
 	    get_pclk1_speed() / 1000000,
 	    get_pclk2_speed() / 1000000);
 
-    uint8_t rxbuf[256], txbuf[256];
-    volatile uint8_t rxbuf_windex, rxbuf_rindex;
+    enable_gpio_interface(GPIO_PC);
+    set_gpio_mode(GPIO_PC, GPIO_Pin_5, GPIO_Mode_Output);
+    enable_user_button();
+
+#if 1
+    uint16_t rxbuf[256], txbuf[256];
+    volatile uint16_t rxbuf_windex, rxbuf_rindex;
 
     rxbuf_rindex = rxbuf_windex = 0;
 
@@ -28,15 +33,30 @@ int main(void) {
 	txbuf[i] = i + 1;
 
     spi_config_rxbuffer(rxbuf, &rxbuf_windex);
-    spi_config_txbuffer(txbuf, 100U);
-    init_spi(SPI_Channel_1, SPI_Peripheral, SPI_CPHA_Imm, SPI_CPOL_Idle_Lo, SPI_Comm_Full_Duplex, SPI_MSB_First, SPI_DATASIZE_8);
+    spi_config_txbuffer(txbuf, 10U);
+    init_spi(SPI_Channel_1, SPI_Peripheral, SPI_CPHA_Imm, SPI_CPOL_Idle_Lo, SPI_Comm_Full_Duplex, SPI_MSB_First, SPI_DATASIZE_16);
 
     spi_start(SPI_Channel_1);
 
     while(1) {
+	if(is_user_button_pressed()) {
+	    GPIOC->ODR |= GPIO_ODR_OD5;
+	} else {
+	    GPIOC->ODR &= ~GPIO_ODR_OD5;
+	}
 	if(rxbuf_windex != rxbuf_rindex) {
 	    my_printf("Read: %d[w:%d]\n", rxbuf[rxbuf_rindex++], rxbuf_windex);
 	}
     }
+
+#else 
+    while(1) {
+	if(is_user_button_pressed()) {
+	    GPIOC->ODR |= GPIO_ODR_OD5;
+	} else {
+	    GPIOC->ODR &= ~GPIO_ODR_OD5;
+	}
+    }
+#endif
     return 0;
 }

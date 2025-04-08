@@ -1,6 +1,6 @@
 CC = arm-none-eabi-gcc
 INCLUDE_PATH = -I./cmsis/CMSIS_5/CMSIS/Core/Include/ -I./cmsis/CMSIS_5/Device/ST/cmsis-device-g4/Include/ -I./h/
-CFLAGS = -mcpu=cortex-m4 $(INCLUDE_PATH) -O2 #-Wall -Werror -Wextra
+CFLAGS = -mcpu=cortex-m4 $(INCLUDE_PATH) -O2 -Wall -Werror -Wextra
 LINKER_FILE = ./src/linker.ld
 LDFLAGS = -T $(LINKER_FILE) -nostartfiles
 OUTPUT_ELF = myprog.elf
